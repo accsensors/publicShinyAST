@@ -5,5 +5,5 @@ options(shiny.maxRequestSize = 40*1024^2)
 #devtools::install_github("accsensors/astr", ref = "public_shiny", upgrade = "always")
 pkgload::load_all(export_all = FALSE,helpers = FALSE,attach_testthat = FALSE)
 options( "golem.app.prod" = TRUE)
-shinyAST::run_app() # add parameters here (if any)
+publicShinyAST::run_app() # add parameters here (if any)
 

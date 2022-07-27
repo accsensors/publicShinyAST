@@ -1,7 +1,0 @@
-# shinyAST
- 
- To run:
- 
- - Open Project in Rstudio.
- - Type "devtools::load_all()" in the Console
- - Type "run_app()" in the Console

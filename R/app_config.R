@@ -11,7 +11,7 @@
 #'
 #' @noRd
 app_sys <- function(...) {
-  system.file(..., package = "shinyAST")
+  system.file(..., package = "publicShinyAST")
 }
 
 
