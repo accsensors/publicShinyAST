@@ -1,0 +1,26 @@
+{
+    "id": "81E2E0BA",
+    "path": "~/Documents/GitHub/shinyAST/R/run_app.R",
+    "project_path": "R/run_app.R",
+    "type": "r_source",
+    "hash": "2492454107",
+    "contents": "",
+    "dirty": false,
+    "created": 1649736011300.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "0,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1657261028,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1657261028,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,13 @@
+name: shinyAST
+title: shinyAST
+username:
+account: casey-quinn
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6677209
+bundleId: 6133326
+url: https://casey-quinn.shinyapps.io/shinyAST/
+when: 1658815825.10861
+lastSyncTime: 1658815825.10862
+asMultiple: FALSE
+asStatic: FALSE

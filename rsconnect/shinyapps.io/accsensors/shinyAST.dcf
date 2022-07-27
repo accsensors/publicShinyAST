@@ -1,0 +1,13 @@
+name: shinyAST
+title: shinyAST
+username:
+account: accsensors
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6625845
+bundleId: 6133331
+url: https://accsensors.shinyapps.io/shinyAST/
+when: 1658816034.62041
+lastSyncTime: 1658816034.62042
+asMultiple: FALSE
+asStatic: FALSE
