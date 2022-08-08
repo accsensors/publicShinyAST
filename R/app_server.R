@@ -2,7 +2,6 @@
 #'
 #' @param input,output,session Internal parameters for {shiny}.
 #'     DO NOT REMOVE.
-#' @import astr
 #' @import dplyr
 #' @import ggplot2
 #' @import plotly
@@ -17,7 +16,7 @@ app_server <- function(input, output, session) {
     req(input$upload)
 
     input$upload$datapath[grep('*.*LOG.*\\.txt$',input$upload$name)]%>%
-      purrr::map(read_ast_log, shiny=TRUE) %>%
+      purrr::map(astr::read_ast_log, shiny=TRUE) %>%
       dplyr::bind_rows()
   })
 
@@ -25,7 +24,7 @@ app_server <- function(input, output, session) {
     req(input$upload)
 
     input$upload$datapath[grep('*.*LOG.*\\.txt$',input$upload$name)]%>%
-      purrr::map(read_ast_header, shiny=TRUE) %>%
+      purrr::map(astr::read_ast_header, shiny=TRUE) %>%
       dplyr::bind_rows()
 
   })
