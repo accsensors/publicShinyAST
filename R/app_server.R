@@ -4,14 +4,13 @@
 #'     DO NOT REMOVE.
 #' @import dplyr
 #' @import ggplot2
-#' @import plotly
 #' @import purrr
 #' @import shiny
 #'
 #' @noRd
 app_server <- function(input, output, session) {
-  # output$files <- renderTable(input$upload)
 
+  #--- READ IN LOG ---#
   data_log <- reactive({
     req(input$upload)
 
@@ -20,6 +19,13 @@ app_server <- function(input, output, session) {
       dplyr::bind_rows()
   })
 
+  # Filter log file to clean up table displaying interactive plot values
+  data_log_filter <- reactive({
+    data_log() %>%
+      dplyr::select(UPASserial, input$x_axis, input$y_axis)
+  })
+
+  #--- READ IN HEADER ---#
   data_header <- reactive({
     req(input$upload)
 
@@ -29,35 +35,60 @@ app_server <- function(input, output, session) {
 
   })
 
-
-  output$logsummary <- renderTable({
-    astr::upasv2x_sample_summary(data_header())
+  #--- SUMMARY HEADER TABLES ---#
+  # Reactive variable for summary table formatting
+  tableOptions <- reactive({
+    list(paging=FALSE, searching=FALSE,
+         columnDefs= list(list(className='dt-center', targets="_all")
+                          #list(visible=FALSE, targets='ASTSampler')
+         ))
   })
 
-  output$logmeta <- renderTable({
-    astr::upasv2x_sample_meta(data_header())
+  # GENERAL UPAS OPERATION META DATA
+  output$logmeta <- DT::renderDataTable({
+    input$applyButton
+    DT::datatable(
+      astr::upasv2x_sample_meta(data_header(), shiny=TRUE, fract_units = isolate(input$unitformat)),
+      options = tableOptions(),
+      rownames=FALSE) %>%
+      DT::formatStyle('SampleSuccess',
+                      target = 'row',
+                      backgroundColor = DT::styleEqual(
+                        c('FAIL'), 'lightpink'
+                      ))
+
   })
 
-  output$logsettings <- renderTable({
-    astr::upasv2x_sample_settings(data_header())
+  # BASIC HEADER SUMMARY DATA
+  output$logsummary <- DT::renderDataTable({
+    input$applyButton
+    DT::datatable(
+      astr::upasv2x_sample_summary(data_header(), shiny=TRUE, fract_units = isolate(input$unitformat)),
+      options = tableOptions(),
+      rownames=FALSE) %>%
+      DT::formatStyle('SampleSuccess',
+                      target = 'row',
+                      backgroundColor = DT::styleEqual(
+                        c('FAIL'), 'lightpink'
+                      ))
   })
 
-  plot_geom <- reactive({
-    switch(input$geom,
-           point = geom_point(),
-           line = geom_line()
-    )
+  # SAMPLE SETTINGS DATA
+  output$logsettings <- DT::renderDataTable({
+    input$applyButton
+    DT::datatable(
+      astr::upasv2x_sample_settings(data_header(), shiny=TRUE, fract_units = isolate(input$unitformat)),
+      options = tableOptions(),
+      rownames=FALSE) %>%
+      DT::formatStyle('SampleSuccess',
+                      target = 'row',
+                      backgroundColor = DT::styleEqual(
+                        c('FAIL'), 'lightpink'
+                      ))
   })
 
-  basicPlot <- reactive({
-    ggplot(data_log(), aes(.data[[input$x_axis]], .data[[input$y_axis]],
-                           color = as.factor(.data$UPASserial))) +
-      plot_geom() +
-      scale_color_manual("UPAS Serial",values = astr::jvcp) +
-      theme_bw() +
-      theme(legend.position = 'right')
-  })
-
+  #--- PLOT FORMATTING ---#
+  # Reset x and y axis values when reading in a file
   observeEvent(data_log(), {
     freezeReactiveValue(input, "x_axis")
     freezeReactiveValue(input, "y_axis")
@@ -67,28 +98,113 @@ app_server <- function(input, output, session) {
                       selected = 'PumpingFlowRate')
   })
 
-  #Make a plot and plotly plot.
-  #TODO Down the line it will be good to make
-  #this conditional but this portion doesn't seem to slow the app down
-  #significantly since outputting these plots in the ui is conditional
-  output$plot <- renderPlot({
-    basicPlot()
+  # Format x and y plot labels with units and spaces
+  plotx_label <- reactive({
+    astr::shiny_axis(input$x_axis, fract_units = input$unitformat)
+  })
+  ploty_label <- reactive({
+    astr::shiny_axis(input$y_axis, fract_units = input$unitformat)
   })
 
-  output$plot_ly <- renderPlotly({
-    ggplotly(
-      basicPlot(),
-      dynamicTicks = TRUE
+  # Select plot geometry
+  plot_geom <- reactive({
+    switch(input$geom,
+           point = geom_point(),
+           line = geom_line()
     )
   })
 
+  #--- PLOTTING ---#
+
+  # SET UP THE STATIC PLOT
+  basicPlot <- reactive({
+    input$applyButton
+    ggplot(data_log(), aes(.data[[isolate(input$x_axis)]], .data[[isolate(input$y_axis)]],
+                           color = as.factor(.data$UPASserial))) +
+      labs(x = isolate(plotx_label()), y = isolate(ploty_label())) +
+      isolate(plot_geom()) +
+      scale_color_manual("UPAS Serial",values = astr::jvcp) +
+      theme_bw() +
+      theme(legend.position = 'none',
+            text=element_text(size=isolate(input$plotfont)))
+  })
+
+  # SET UP THE ZOOMABLE PLOT
+  # Set up dynamic x and y axis ranges
+  ranges <- reactiveValues(x = NULL, y = NULL)
+
+  # Set up plot
+  basicPlot_zoom <- reactive({
+    basicPlot() +
+      coord_cartesian(xlim = ranges$x, ylim = ranges$y, expand = TRUE) +
+      theme(legend.position = 'right')
+  })
+
+  # When a double-click happens on the static plot, check if there's a brush on the plot.
+  # If so, zoom the zoomable plot to the brush bounds; if not, reset the zoom.
+  observeEvent(input$plot_dblclick, {
+    brush <- input$plot_brush
+    if (!is.null(brush)) {
+      ranges$x <- c(brush$xmin, brush$xmax)
+      ranges$y <- c(brush$ymin, brush$ymax)
+      if(input$x_axis=="DateTimeUTC" | input$x_axis=="DateTimeLocal"){
+        ranges$x = as.POSIXct(ranges$x, origin = "1970-01-01")
+      }
+      if(input$y_axis=="DateTimeUTC" | input$y_axis=="DateTimeLocal"){
+        ranges$y = as.POSIXct(ranges$y, origin = "1970-01-01")
+      }
+    } else {
+      ranges$x <- NULL
+      ranges$y <- NULL
+    }
+  })
+
+  # RENDER THE STATIC AND ZOOMABLE PLOTS
+  output$plot <- renderPlot({
+    input$applyButton
+    basicPlot()
+  })
+  output$plot_zoom <- renderPlot({
+    basicPlot_zoom()
+  })
+
+  #--- RENDER DATATABLE FOR DISPLAYING INTERACTIVE PLOT VALUES ---#
+  # Reactive variable for click table formatting
+  clickTableOptions <- reactive({
+    list(paging=FALSE, searching=FALSE,
+         columnDefs= list(list(className='dt-center', targets="_all")))
+  })
+
+  output$click_info <- DT::renderDataTable({
+    req(input$plot_click)
+    # SampleTime is formatted to display only 3 decimal places
+    if(input$x_axis=="SampleTime" | input$y_axis=="SampleTime"){
+      DT::datatable(
+        nearPoints(data_log_filter(), input$plot_click, xvar=input$x_axis, yvar=input$y_axis,
+                   threshold = 5, maxpoints = 5),
+        options = clickTableOptions(),
+        rownames=FALSE) %>%
+        DT::formatRound(columns="SampleTime", digits=3)
+    }
+    else{
+      DT::datatable(
+        nearPoints(data_log_filter(), input$plot_click, xvar=input$x_axis, yvar=input$y_axis,
+                   threshold = 5, maxpoints = 5),
+        options = clickTableOptions(),
+        rownames=FALSE)
+    }
+  })
+
+
+  #--- PLOT DOWNLOADING ---#
   output$download <- downloadHandler(
     filename = function() {
       paste(input$plotname, input$extension, sep = ".")
     },
     content = function(file) {
-      ggsave(file, basicPlot(), device = input$extension,
-             width = 5000, height = 2500, units = "px")
+      # Download the zoomable plot
+      ggsave(file, basicPlot_zoom(), device = input$extension,
+             width = input$plotwidth, height = input$plotheight, units = "px")
     }
   )
 
