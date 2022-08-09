@@ -36,7 +36,7 @@ app_ui <- function(request) {
                                fluidRow(style = "padding:2px"),
                                # SUBMIT GITHUB ISSUE BUTTON
                                actionButton("button", "Submit Github Issue",
-                                            onclick ="window.open('https://github.com/accsensors/shinyAST/issues/new', '_blank')",
+                                            onclick ="window.open('https://github.com/accsensors/publicShinyAST/issues', '_blank')",
                                             width = "200px",
                                             style = "background-color:#081B33;
                       color:#FFFFFF;
