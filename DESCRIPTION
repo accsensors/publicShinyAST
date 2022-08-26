@@ -2,8 +2,14 @@ Package: publicShinyAST
 Title: An Amazing Shiny App
 Version: 0.0.0.9000
 Authors@R: 
+    person("Jessica", "Tryner", , "jtryner@accsensors.com", role = "aut",
+           comment = c(ORCID = "0000-0002-0522-4551")),
     person("Casey", "Quinn", , "quinn.casey@gmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "0000-0002-6802-5250"))
+           comment = c(ORCID = "0000-0002-6802-5250"),
+    person("Gabe", "Neymark", , "gneymark@accsensors.com", role = "aut",
+           comment = c(ORCID = "0000-0003-0720-1908")),
+    person("Access Sensor Technologies", role = c("cph", "fnd")),
+    person("National Institutes of Health", role = "fnd"))
 Description: What the package does (one paragraph).
 License: MPL-2.0 | file LICENSE
 Imports: 
